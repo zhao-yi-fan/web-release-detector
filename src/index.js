@@ -105,6 +105,7 @@ export default function releaseInspect(options = {}) {
           cursor: pointer;
         " id="releaseInspectCloseBtn">关闭</div>
       `;
+      // TODO 不应该加到body上，应该加到一个固定的容器上
       document.body.appendChild(div);
       const btn = div.querySelector("#releaseInspectRefreshBtn");
       btn.addEventListener("click", () => {
