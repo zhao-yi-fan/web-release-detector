@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es6",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@sentry/browser": ["node_modules/@sentry/browser/dist/index.d.ts"],
+      "@sentry/integrations": ["node_modules/@sentry/integrations/dist/index.d.ts"]
+    }
+
+  },
+  "exclude": [
+    "lib",
+    "node_modules",
+  ]
+}
