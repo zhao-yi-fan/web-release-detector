@@ -4,7 +4,7 @@ const scriptReg = /<script.*?src=["']?(?<src>[^"'\s>]+)/gm;
 /**
  * 获取最新页面中的script链接
  */
-async function extractNewScripts(options) {
+async function extractNewScripts (options) {
   const origin = window.location.origin;
   const pathname = window.location.pathname;
   // 解析当前网站的网关，在origin后面的第一个/之前默认为网关
@@ -12,7 +12,7 @@ async function extractNewScripts(options) {
   if (!options.gateway) {
     const firstSlashIndex = pathname.indexOf("/", 1);
     if (firstSlashIndex > 0) {
-      gateway += pathname.substring(0, firstSlashIndex);
+      gateway += pathname.substring(0, firstSlashIndex) + '/';
     }
   }
   // 获取最新的html
@@ -28,7 +28,7 @@ async function extractNewScripts(options) {
   return result;
 }
 
-async function needUpdate(options) {
+async function needUpdate (options) {
   const newScripts = await extractNewScripts(options);
   if (!lastSrcs) {
     lastSrcs = newScripts;
@@ -47,8 +47,8 @@ async function needUpdate(options) {
   lastSrcs = newScripts;
   return result;
 }
-export default function releaseInspect(options = {}) {
-  const { callback, DURATION = 5000 } = options;
+export default function releaseInspect (options = {}) {
+  const { callback, DURATION = 15000 } = options;
   setTimeout(async () => {
     const willUpdate = await needUpdate(options);
     if (willUpdate) {
