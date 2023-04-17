@@ -48,7 +48,7 @@ async function needUpdate (options) {
   return result;
 }
 export default function releaseInspect (options = {}) {
-  const { callback, DURATION = 15000 } = options;
+  const { callback, DURATION = 120 * 1000 } = options;
   setTimeout(async () => {
     const willUpdate = await needUpdate(options);
     if (willUpdate) {
