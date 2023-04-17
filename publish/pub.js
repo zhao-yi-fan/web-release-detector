@@ -71,6 +71,7 @@ co(function* () {
       exit(1);
     }
     echoSuccess('npm版本升级成功！');
+    exit();
 
   })();
 });
