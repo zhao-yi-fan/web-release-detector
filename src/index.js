@@ -118,7 +118,7 @@ export default function releaseInspect (options = {}) {
           document.body.removeChild(div);
         }, 500);
       });
-      callback();
+      callback && callback();
     }
     releaseInspect(options);
   }, DURATION);
