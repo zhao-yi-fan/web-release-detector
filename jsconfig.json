@@ -6,11 +6,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "paths": {
-      "@sentry/browser": ["node_modules/@sentry/browser/dist/index.d.ts"],
-      "@sentry/integrations": ["node_modules/@sentry/integrations/dist/index.d.ts"]
-    }
-
+    "paths": {}
   },
   "exclude": [
     "lib",

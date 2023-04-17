@@ -1,6 +1,6 @@
 let lastSrcs; // 上次获取到的script链接
 
-const scriptReg = /\<script.*?src=["']?(?<src>[^"'\s>]+)/gm;
+const scriptReg = /<script.*?src=["']?(?<src>[^"'\s>]+)/gm;
 /**
  * 获取最新页面中的script链接
  */
