@@ -55,23 +55,6 @@ function createRefreshDom (options = {}) {
       font-size: 14px;
       margin-right: 10px;
       color: #333;
-    if (document.visibilityState === "hidden") {
-      document.addEventListener("visibilitychange", async () => {
-        if (document.visibilityState === "visible") {
-          const willUpdate = await needUpdate(options);
-          if (willUpdate) {
-            callback && callback();
-          }
-        }
-      });
-      return;
-    }
-    const willUpdate = await needUpdate(options);
-    if (willUpdate) {
-      callback && callback();
-    }
-    releaseInspect(options);
-  }
     ">检测到新版本</div>
     <div style="
       font-size: 14px;
