@@ -17,6 +17,10 @@ async function extractNewScripts (options) {
     if (firstSlashIndex > 0) {
       gateway += pathname.substring(0, firstSlashIndex) + '/';
     }
+    // http://localhost:3000/111.html 如果判断有后缀名则使用当前路径
+    if (pathname.indexOf(".") > 0) {
+      gateway = location.href;
+    }
   }
   // 获取最新的html
   const html = await fetch(gateway + "?_timestamp=" + Date.now()).then((res) =>
@@ -33,6 +37,10 @@ async function extractNewScripts (options) {
 // 生成页面的dom
 function createRefreshDom (options = {}) {
   const container = options.container || document.body;
+  // 判断container中是否已经存在dom 如果存在则不再创建
+  if (container.querySelector("#releaseInspectRefreshBtn")) {
+    return;
+  }
 
   const div = document.createElement("div");
   div.style.cssText = `
@@ -131,7 +139,7 @@ async function needUpdate (options) {
  * customCreateDom: (options) => {} // 自定义创建dom的方法
  * }
  */
-export default function releaseInspect (options = {}) {
+export function releaseInspect (options = {}) {
   const { callback, DURATION = 120 * 1000 } = options;
   setTimeout(async () => {
     const willUpdate = await needUpdate(options);
