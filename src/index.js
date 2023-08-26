@@ -176,7 +176,7 @@ function checkRouterMatched (Vue, router) {
  * }
  */
 export function releaseInspect (options = {}) {
-  const { callback, DURATION = 120 * 1000, Vue, router } = options;
+  const { callback, DURATION = 3 * 1000, Vue, router } = options;
   setTimeout(async () => {
     const willUpdate = await needUpdate(options);
     if (willUpdate) {
