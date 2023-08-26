@@ -176,26 +176,30 @@ function checkRouterMatched (Vue, router) {
  * }
  */
 export function releaseInspect (options = {}) {
-  const { callback, DURATION = 3 * 1000, Vue, router } = options;
+  const { callback, DURATION = 120 * 1000, Vue, router } = options;
   setTimeout(async () => {
-    const willUpdate = await needUpdate(options);
-    if (willUpdate) {
-      // 判断是否vue2版本
-      if (Vue.version && Vue.version.startsWith('2.') && router) {
-        const hasFasly = checkRouterMatched(Vue, router)
-        if (hasFasly) {
-          releaseInspect(options);
-          return
+    try {
+      const willUpdate = await needUpdate(options);
+      if (willUpdate) {
+        // 判断是否vue2版本
+        if (Vue && Vue.version.startsWith('2.') && router) {
+          const hasFalsely = checkRouterMatched(Vue, router);
+          if (hasFalsely) {
+            releaseInspect(options);
+            return;
+          }
         }
+        // 生成自定义dom
+        if (options.customCreateDom) {
+          options.customCreateDom(options);
+        } else {
+          createRefreshDom(options);
+        }
+        callback && callback(options);
       }
-      // 生成自定义dom
-      if (options.customCreateDom) {
-        options.customCreateDom(options);
-      } else {
-        createRefreshDom(options);
-      }
-      callback && callback(options);
+      releaseInspect(options);
+    } catch (error) {
+      console.error("Error in releaseInspect function:", error);
     }
-    releaseInspect(options);
   }, DURATION);
 }
