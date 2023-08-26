@@ -138,6 +138,33 @@ async function needUpdate (options) {
   return result;
 }
 
+function checkRouterMatched (Vue, router) {
+  // 如果 Vue 版本不是 2.x.x，直接返回 false
+  if (!Vue.version.startsWith('2.')) {
+    return false;
+  }
+  const parsedURL = new URL(location.href);
+  let pathToResolve;
+
+  // 使用默认值 'hash' 如果 mode 未定义
+  const mode = router.mode || 'hash';
+  const base = router.options.base || '/';
+
+  if (mode === 'hash') {
+    pathToResolve = parsedURL.hash.slice(1); // 去除 '#' 符号
+  } else if (mode === 'history') {
+    pathToResolve = parsedURL.pathname;
+    // 考虑base参数，如果pathname开始于base，去掉base部分
+    if (pathToResolve.startsWith(base)) {
+      pathToResolve = pathToResolve.slice(base.length);
+    }
+  }
+
+  const resolvedRoute = router.resolve(pathToResolve);
+  // 检查是否有任何匹配的路由记录中的 meta 属性有 releaseInspect 设置为 false
+  return resolvedRoute.resolved.matched.some(record => record.meta && record.meta.releaseInspect === false);
+}
+
 /**
  * 
  * @param {*} options  {
@@ -149,10 +176,18 @@ async function needUpdate (options) {
  * }
  */
 export function releaseInspect (options = {}) {
-  const { callback, DURATION = 120 * 1000 } = options;
+  const { callback, DURATION = 120 * 1000, Vue, router } = options;
   setTimeout(async () => {
     const willUpdate = await needUpdate(options);
     if (willUpdate) {
+      // 判断是否vue2版本
+      if (Vue.version && Vue.version.startsWith('2.') && router) {
+        const hasFasly = checkRouterMatched(Vue, router)
+        if (hasFasly) {
+          releaseInspect(options);
+          return
+        }
+      }
       // 生成自定义dom
       if (options.customCreateDom) {
         options.customCreateDom(options);
