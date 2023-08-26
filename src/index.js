@@ -22,17 +22,26 @@ async function extractNewScripts (options) {
       gateway = location.href;
     }
   }
-  // 获取最新的html
-  const html = await fetch(gateway + "?_timestamp=" + Date.now()).then((res) =>
-    res.text()
-  );
-  scriptReg.lastIndex = 0;
-  const result = [];
-  let match;
-  while ((match = scriptReg.exec(html))) {
-    result.push(match.groups.src);
+  try {
+    // 获取最新的html
+    const html = await fetch(gateway + "?_timestamp=" + Date.now()).then((res) =>
+      res.text()
+    );
+    scriptReg.lastIndex = 0;
+    const result = [];
+    let match;
+    while ((match = scriptReg.exec(html))) {
+      result.push(match.groups.src);
+    }
+    return result;
+  } catch (error) {
+    console.warn(error);
+    if (!lastSrcs) { // 如果是第一次，lastSrcs此时为undefined，继续赋值为undefined
+      return undefined
+    } else { // 如果不是第一次，返回上次获取到的script链接 认为没有更新
+      return lastSrcs
+    }
   }
-  return result;
 }
 // 生成页面的dom
 function createRefreshDom (options = {}) {
