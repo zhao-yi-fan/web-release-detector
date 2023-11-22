@@ -166,14 +166,15 @@ function checkRouterMatched (Vue, router) {
 }
 
 /**
- * 
- * @param {*} options  {
- * DURATION: 120 * 1000, // 检测间隔时间
- * callback: () => {}, // 检测到更新后的回调
- * container: document.body, // 插入的容器
- * gateway: 'http://localhost:8080/product/' // 网关
- * customCreateDom: (options) => {} // 自定义创建dom的方法
- * }
+ * 发布检测函数
+ * @param {Vue} [options.Vue] - Vue 对象
+ * @param {VueRouter} [options.router] - VueRouter 对象
+ * @param {number} [options.DURATION=120000] - 检测间隔时间，默认为 120 秒（单位：毫秒）
+ * @param {function} [options.callback] - 检测到更新后的回调函数
+ * @param {HTMLElement} [options.container=document.body] - 插入的容器，默认为 document.body
+ * @param {string} [options.gateway] - 网关，默认为在 location.origin 后的第一个 "/" 之前
+ * @param {function} [options.customCreateDom] - 自定义创建 DOM 的方法
+ * @returns {void}
  */
 export function releaseInspect (options = {}) {
   const { callback, DURATION = 120 * 1000, Vue, router } = options;
