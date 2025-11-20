@@ -1,4 +1,4 @@
-let lastSrcs: string[] | undefined; // 上次获取到的script链接
+let lastSrcList: string[] | undefined; // 上次获取到的script链接
 
 // <script src=static/js/chunk-elementUI.7c48a9d2.js></script>
 // <script src='static/js/chunk-elementUI.7c48a9d2.js'></script>
@@ -64,12 +64,12 @@ async function extractNewScripts(
   } catch (error) {
     // 断网或者其他服务器原因导致接口获取失败
     console.warn(error);
-    if (!lastSrcs) {
-      // 如果是第一次，lastSrcs此时为undefined，继续赋值为undefined
+    if (!lastSrcList) {
+      // 如果是第一次，lastSrcList此时为undefined，继续赋值为undefined
       return undefined;
     } else {
       // 如果不是第一次，返回上次获取到的script链接 认为没有更新
-      return lastSrcs;
+      return lastSrcList;
     }
   }
 }
@@ -158,27 +158,27 @@ function createRefreshDom(options: ReleaseInspectOptions = {}): void {
  */
 async function needUpdate(options: ReleaseInspectOptions): Promise<boolean> {
   const newScripts = await extractNewScripts(options);
-  if (!lastSrcs) {
+  if (!lastSrcList) {
     // 第一次存储的script src数组
-    lastSrcs = newScripts;
+    lastSrcList = newScripts;
     return false;
   }
   let result = false;
   // 如果两次获取到的script src数组长度不一致，则认为有更新
-  if (lastSrcs.length !== newScripts?.length) {
+  if (lastSrcList.length !== newScripts?.length) {
     result = true;
   }
   // 如果上次和本次获取到的script src数组中相同索引有不一致的，则认为有更新
   if (newScripts) {
-    for (let i = 0; i < lastSrcs.length; i++) {
-      if (lastSrcs[i] !== newScripts[i]) {
+    for (let i = 0; i < lastSrcList.length; i++) {
+      if (lastSrcList[i] !== newScripts[i]) {
         result = true;
         break;
       }
     }
   }
   // 将最新解析结果保存覆盖到上次存储的变量中
-  lastSrcs = newScripts;
+  lastSrcList = newScripts;
   return result;
 }
 
