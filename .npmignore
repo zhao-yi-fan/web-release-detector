@@ -1,0 +1,34 @@
+# Source files (already built to lib/)
+src/
+examples/
+publish/
+
+# Config files
+tsconfig.json
+rollup.config.ts
+.eslintrc*
+.prettierrc*
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# IDE
+.vscode/
+.idea/
+
+# Testing
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+coverage/
+
+# Misc
+*.log
+.DS_Store
+

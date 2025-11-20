@@ -1,20 +1,29 @@
 {
-	"name": "@hxjf/r-inspect",
+	"name": "web-release-detector",
 	"version": "0.1.4",
-	"description": "",
+	"description": "A release version inspector for web applications",
 	"main": "./lib/cjs/index.js",
 	"module": "./lib/esm/index.js",
+	"types": "./lib/types/index.d.ts",
 	"files": [
 		"lib",
 		"src"
 	],
 	"scripts": {
-		"dev": "cross-env NODE_ENV=development rollup -c -w",
-		"build": "cross-env NODE_ENV=production rollup -c",
-		"pub": "node publish/pub.js"
+		"dev": "cross-env NODE_ENV=development rollup -c rollup.config.ts --configPlugin typescript -w",
+		"build": "cross-env NODE_ENV=production rollup -c rollup.config.ts --configPlugin typescript",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage",
+		"pub": "ts-node publish/pub.ts"
 	},
-	"keywords": [],
-	"author": "hxfe Team",
+	"keywords": [
+		"release",
+		"inspect",
+		"version",
+		"update"
+	],
+	"author": "Developer Team",
 	"license": "MIT",
 	"devDependencies": {
 		"@babel/core": "^7.12.10",
@@ -24,21 +33,29 @@
 		"@rollup/plugin-json": "^5.0.2",
 		"@rollup/plugin-node-resolve": "^15.0.1",
 		"@rollup/plugin-typescript": "^10.0.1",
+		"@types/co": "^4.6.3",
+		"@types/jest": "^30.0.0",
 		"@types/js-cookie": "^3.0.2",
+		"@types/jsdom": "^27.0.0",
+		"@types/node": "^18.0.0",
+		"@types/shelljs": "^0.8.11",
 		"@typescript-eslint/eslint-plugin": "^5.44.0",
 		"@typescript-eslint/parser": "^5.44.0",
 		"co": "^4.6.0",
 		"co-prompt": "^1.0.0",
 		"cross-env": "^7.0.3",
 		"eslint": "^8.28.0",
+		"jest": "^30.2.0",
+		"jest-environment-jsdom": "^30.2.0",
+		"jsdom": "^26.1.0",
 		"rollup": "^2.37.1",
 		"rollup-plugin-serve": "^1.1.0",
 		"shelljs": "^0.8.5",
+		"ts-jest": "^29.4.5",
+		"ts-node": "^10.9.1",
 		"typescript": "^4.9.3"
 	},
 	"publishConfig": {
-		"registry": "http://npm.hongxinshop.com",
 		"access": "public"
-	},
-	"dependencies": {}
+	}
 }

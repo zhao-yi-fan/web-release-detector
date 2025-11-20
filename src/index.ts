@@ -1,23 +1,36 @@
-let lastSrcs; // 上次获取到的script链接
+let lastSrcs: string[] | undefined; // 上次获取到的script链接
 
 // <script src=static/js/chunk-elementUI.7c48a9d2.js></script>
 // <script src='static/js/chunk-elementUI.7c48a9d2.js'></script>
 // <script src="static/js/chunk-elementUI.7c48a9d2.js"></script>
 const scriptReg = /<script[^>]*src=["']?(?<src>[^"'\s>]+)/gm;
+
+interface ReleaseInspectOptions {
+  Vue?: any;
+  router?: any;
+  DURATION?: number;
+  callback?: (options: ReleaseInspectOptions) => void;
+  container?: HTMLElement;
+  gateway?: string;
+  customCreateDom?: (options: ReleaseInspectOptions) => void;
+}
+
 /**
  * 获取最新页面中的script链接
- * 以 "https://mit-hxjf.hongxinshop.com/pc-vue/measure/iframeIndex" 为例
+ * 以 "https://example.com/app/page" 为例
  */
-async function extractNewScripts(options) {
-  const origin = window.location.origin; // https://mit-hxjf.hongxinshop.com
-  const pathname = window.location.pathname; // /pc-vue/measure/iframeIndex
+async function extractNewScripts(
+  options: ReleaseInspectOptions
+): Promise<string[] | undefined> {
+  const origin = window.location.origin; // https://example.com
+  const pathname = window.location.pathname; // /app/page
   // 解析当前网站的网关，在origin后面的第一个/之前默认为网关
-  let gateway = options.gateway || origin; // 默认为: https://mit-hxjf.hongxinshop.com
+  let gateway = options.gateway || origin; // 默认为: https://example.com
   if (!options.gateway) {
     // 从第二个字符开始查找/的位置 因为pathname第一个字符固定是/
     const firstSlashIndex = pathname.indexOf("/", 1);
     if (firstSlashIndex > 0) {
-      // https://mit-hxjf.hongxinshop.com + /pc-vue/
+      // https://example.com + /app/
       gateway += pathname.substring(0, firstSlashIndex) + "/";
     }
     // 如果判断有后缀名则使用当前路径 则认为不是单页面应用程序 如: http://localhost:3000/111.html
@@ -32,17 +45,19 @@ async function extractNewScripts(options) {
     );
     // 重置正则的lastIndex
     scriptReg.lastIndex = 0;
-    const result = [];
-    let match;
+    const result: string[] = [];
+    let match: RegExpExecArray | null;
     while ((match = scriptReg.exec(html))) {
-      result.push(match.groups.src);
+      if (match.groups?.src) {
+        result.push(match.groups.src);
+      }
     }
     /* 
     [
-      "/public-vue/static/js/jhongxin-1.0.0.min.js",
-      "/pc-vue/static/js/manifest.40970b094d0e055c6181.js",
-      "/pc-vue/static/js/vendor.769c9fcad87444add951.js",
-      "/pc-vue/static/js/app.d8b5c099779a6bb31c19.js"
+      "/public-vue/static/js/app-1.0.0.min.js",
+      "/app-vue/static/js/manifest.40970b094d0e055c6181.js",
+      "/app-vue/static/js/vendor.769c9fcad87444add951.js",
+      "/app-vue/static/js/app.d8b5c099779a6bb31c19.js"
     ]
     */
     return result;
@@ -58,8 +73,9 @@ async function extractNewScripts(options) {
     }
   }
 }
+
 // 生成页面的dom
-function createRefreshDom(options = {}) {
+function createRefreshDom(options: ReleaseInspectOptions = {}): void {
   const container = options.container || document.body;
   // 判断container中是否已经存在dom 如果存在则不再创建 防止当前页面检测到多次版本更新，追加了多次dom
   if (container.querySelector("#releaseInspectRefreshBtn")) {
@@ -122,12 +138,12 @@ function createRefreshDom(options = {}) {
   container.appendChild(div);
   // 刷新按钮
   const btn = div.querySelector("#releaseInspectRefreshBtn");
-  btn.addEventListener("click", () => {
+  btn?.addEventListener("click", () => {
     window.location.reload();
   });
   // 关闭按钮
   const closeBtn = div.querySelector("#releaseInspectCloseBtn");
-  closeBtn.addEventListener("click", () => {
+  closeBtn?.addEventListener("click", () => {
     div.style.transform = `translateY(-100%)`;
     setTimeout(() => {
       container.removeChild(div);
@@ -140,7 +156,7 @@ function createRefreshDom(options = {}) {
  * @param {object} options - 选项对象。
  * @returns {boolean} - 如果需要更新则返回 true，否则返回 false。
  */
-async function needUpdate(options) {
+async function needUpdate(options: ReleaseInspectOptions): Promise<boolean> {
   const newScripts = await extractNewScripts(options);
   if (!lastSrcs) {
     // 第一次存储的script src数组
@@ -149,14 +165,16 @@ async function needUpdate(options) {
   }
   let result = false;
   // 如果两次获取到的script src数组长度不一致，则认为有更新
-  if (lastSrcs.length !== newScripts.length) {
+  if (lastSrcs.length !== newScripts?.length) {
     result = true;
   }
   // 如果上次和本次获取到的script src数组中相同索引有不一致的，则认为有更新
-  for (let i = 0; i < lastSrcs.length; i++) {
-    if (lastSrcs[i] !== newScripts[i]) {
-      result = true;
-      break;
+  if (newScripts) {
+    for (let i = 0; i < lastSrcs.length; i++) {
+      if (lastSrcs[i] !== newScripts[i]) {
+        result = true;
+        break;
+      }
     }
   }
   // 将最新解析结果保存覆盖到上次存储的变量中
@@ -170,13 +188,13 @@ async function needUpdate(options) {
  * @param {Object} router - 路由实例
  * @returns {boolean} - 如果有任何匹配的路由记录中的 meta 属性有 releaseInspect 设置为 false，则返回 true，否则返回 false
  */
-function checkRouterMatched(Vue, router) {
+function checkRouterMatched(Vue: any, router: any): boolean {
   // 如果 Vue 版本不是 2.x.x，直接返回 false
   if (!Vue.version.startsWith("2.")) {
     return false;
   }
   const parsedURL = new URL(location.href);
-  let pathToResolve;
+  let pathToResolve: string;
 
   // 使用默认值 'hash' 如果 mode 未定义
   const mode = router.mode || "hash";
@@ -190,12 +208,14 @@ function checkRouterMatched(Vue, router) {
     if (pathToResolve.startsWith(base)) {
       pathToResolve = pathToResolve.slice(base.length);
     }
+  } else {
+    pathToResolve = parsedURL.hash.slice(1);
   }
 
   const resolvedRoute = router.resolve(pathToResolve);
   // 检查是否有任何匹配的路由记录中的 meta 属性有 releaseInspect 设置为 false
   return resolvedRoute.resolved.matched.some(
-    (record) => record.meta && record.meta.releaseInspect === false
+    (record: any) => record.meta && record.meta.releaseInspect === false
   );
 }
 
@@ -210,7 +230,7 @@ function checkRouterMatched(Vue, router) {
  * @param {function} [options.customCreateDom] - 自定义创建 DOM 的方法
  * @returns {void}
  */
-export function releaseInspect(options = {}) {
+export function releaseInspect(options: ReleaseInspectOptions = {}): void {
   const { callback, DURATION = 120 * 1000, Vue, router } = options;
   setTimeout(async () => {
     try {
