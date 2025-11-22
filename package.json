@@ -1,6 +1,6 @@
 {
 	"name": "web-release-detector",
-	"version": "0.1.8",
+	"version": "0.1.9",
 	"description": "A release version inspector for web applications",
 	"main": "./lib/cjs/index.js",
 	"module": "./lib/esm/index.js",
