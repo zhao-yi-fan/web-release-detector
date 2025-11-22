@@ -1,4 +1,5 @@
 let lastSrcList: string[] | undefined; // 上次获取到的script链接
+let refreshDomContainer: HTMLElement | null = null; // 保存刷新提示的容器引用
 
 // <script src=static/js/chunk-elementUI.7c48a9d2.js></script>
 // <script src='static/js/chunk-elementUI.7c48a9d2.js'></script>
@@ -77,8 +78,8 @@ async function extractNewScripts(
 // 生成页面的dom
 function createRefreshDom(options: ReleaseInspectOptions = {}): void {
   const container = options.container || document.body;
-  // 判断container中是否已经存在dom 如果存在则不再创建 防止当前页面检测到多次版本更新，追加了多次dom
-  if (container.querySelector("#releaseInspectRefreshBtn")) {
+  // 判断是否已经存在dom，如果存在则不再创建，防止当前页面检测到多次版本更新，追加了多次dom
+  if (refreshDomContainer && container.contains(refreshDomContainer)) {
     return;
   }
 
@@ -98,57 +99,69 @@ function createRefreshDom(options: ReleaseInspectOptions = {}): void {
     transition: transform 0.5s ease-in-out;
     box-shadow: 1px 1px 7px #ccc;
   `;
-  div.innerHTML = `
-    <div style="
-      font-size: 14px;
-      margin-right: 10px;
-      color: #333;
-    ">检测到新版本</div>
-    <div style="
-      font-size: 14px;
-      margin-right: 10px;
-      color: #333;
-    ">请点击刷新按钮</div>
-    <div style="
-      width: 40px;
-      height: 25px;
-      border-radius: 5px;
-      background-color: #1989fa;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 14px;
-      cursor: pointer;
-    " id="releaseInspectRefreshBtn">刷新</div>
-    <div style="
-      margin-left: 5px;
-      width: 40px;
-      height: 25px;
-      border-radius: 5px;
-      background-color: #1989fa;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 14px;
-      cursor: pointer;
-    " id="releaseInspectCloseBtn">关闭</div>
+
+  // 创建文本元素
+  const text1 = document.createElement("div");
+  text1.textContent = "检测到新版本";
+  text1.style.cssText = "font-size: 14px; margin-right: 10px; color: #333;";
+
+  const text2 = document.createElement("div");
+  text2.textContent = "请点击刷新按钮";
+  text2.style.cssText = "font-size: 14px; margin-right: 10px; color: #333;";
+
+  // 创建刷新按钮
+  const refreshBtn = document.createElement("div");
+  refreshBtn.textContent = "刷新";
+  refreshBtn.style.cssText = `
+    width: 40px;
+    height: 25px;
+    border-radius: 5px;
+    background-color: #1989fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
   `;
-  container.appendChild(div);
-  // 刷新按钮
-  const btn = div.querySelector("#releaseInspectRefreshBtn");
-  btn?.addEventListener("click", () => {
+  refreshBtn.addEventListener("click", () => {
     window.location.reload();
   });
-  // 关闭按钮
-  const closeBtn = div.querySelector("#releaseInspectCloseBtn");
-  closeBtn?.addEventListener("click", () => {
+
+  // 创建关闭按钮
+  const closeBtn = document.createElement("div");
+  closeBtn.textContent = "关闭";
+  closeBtn.style.cssText = `
+    margin-left: 5px;
+    width: 40px;
+    height: 25px;
+    border-radius: 5px;
+    background-color: #1989fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  `;
+  closeBtn.addEventListener("click", () => {
     div.style.transform = `translateY(-100%)`;
     setTimeout(() => {
-      container.removeChild(div);
+      if (container.contains(div)) {
+        container.removeChild(div);
+      }
+      refreshDomContainer = null;
     }, 500);
   });
+
+  // 组装 DOM
+  div.appendChild(text1);
+  div.appendChild(text2);
+  div.appendChild(refreshBtn);
+  div.appendChild(closeBtn);
+
+  container.appendChild(div);
+  refreshDomContainer = div; // 保存引用
 }
 
 /**

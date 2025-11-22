@@ -1,7 +1,6 @@
 import * as fs from "fs";
+import * as readline from "readline";
 import { exec, echo, exit } from "shelljs";
-import co from "co";
-import prompt from "co-prompt";
 import chalk from "chalk";
 
 interface PackageJson {
@@ -9,7 +8,26 @@ interface PackageJson {
   [key: string]: any;
 }
 
-co(function* () {
+// 创建 readline 接口用于读取用户输入
+function createReadlineInterface(): readline.Interface {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+}
+
+// 读取用户输入
+function promptUser(question: string): Promise<string> {
+  const rl = createReadlineInterface();
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function main() {
   const CURRENT_BRANCH = exec("git rev-parse --abbrev-ref HEAD", {
     silent: true,
   }).stdout.trim();
@@ -57,71 +75,75 @@ co(function* () {
       3). 主版本号：做了不兼容旧版本的API修改，大版本修改，主版本号递增时，次版本号和修订号必须归零
     `
   );
-  const inputVersion: string = yield prompt(
+  const inputVersion = await promptUser(
     chalk.cyan("输入1/2/3后按回车(不输入默认修订号): ")
   );
 
-  (async () => {
-    const packageFile = await getPackage();
-    // 获取新版本
-    const version = packageFile.version;
-    const newVersion = getNewVersion(version, inputVersion);
-    packageFile.version = newVersion;
+  const packageFile = await getPackage();
+  // 获取新版本
+  const version = packageFile.version;
+  const newVersion = getNewVersion(version, inputVersion);
+  packageFile.version = newVersion;
 
-    // 4. 更新 package.json
+  // 4. 更新 package.json
+  await setPackage(packageFile);
+  echoSuccess(`正在由版本${version}升级到${newVersion}`);
+
+  // 5. 构建验证（确保代码能正常构建）
+  echoInfo("正在构建项目...");
+  if (exec("npm run build").code !== 0) {
+    echoExit("Error: 本地npm run build打包失败，请修复后再发布");
+    // 回滚版本号
+    packageFile.version = version;
     await setPackage(packageFile);
-    echoSuccess(`正在由版本${version}升级到${newVersion}`);
+    exit(1);
+  }
+  echoSuccess("构建成功");
 
-    // 5. 构建验证（确保代码能正常构建）
-    echoInfo("正在构建项目...");
-    if (exec("npm run build").code !== 0) {
-      echoExit("Error: 本地npm run build打包失败，请修复后再发布");
-      // 回滚版本号
-      packageFile.version = version;
-      await setPackage(packageFile);
-      exit(1);
-    }
-    echoSuccess("构建成功");
+  // 6. 只提交 package.json 的版本改动
+  if (exec("git add package.json").code !== 0) {
+    echoExit("Error: Git add package.json failed");
+    exit(1);
+  }
 
-    // 6. 只提交 package.json 的版本改动
-    if (exec("git add package.json").code !== 0) {
-      echoExit("Error: Git add package.json failed");
-      exit(1);
-    }
+  if (
+    exec(`git commit --no-verify -m 'chore: upgrade to ${newVersion}'`).code !==
+    0
+  ) {
+    echoExit("Error: Git commit failed");
+    exit(1);
+  }
 
-    if (
-      exec(`git commit --no-verify -m 'chore: upgrade to ${newVersion}'`)
-        .code !== 0
-    ) {
-      echoExit("Error: Git commit failed");
-      exit(1);
-    }
+  // 7. 创建 tag
+  const tagName = `v${newVersion}`;
+  echoInfo(`正在创建 tag: ${tagName}`);
+  if (exec(`git tag ${tagName}`).code !== 0) {
+    echoExit("Error: Git tag failed");
+    exit(1);
+  }
 
-    // 7. 创建 tag
-    const tagName = `v${newVersion}`;
-    echoInfo(`正在创建 tag: ${tagName}`);
-    if (exec(`git tag ${tagName}`).code !== 0) {
-      echoExit("Error: Git tag failed");
-      exit(1);
-    }
+  // 8. 推送代码和 tag
+  echoInfo("正在推送代码...");
+  if (exec("git push origin master").code !== 0) {
+    echoExit("Error: Git push failed");
+    exit(1);
+  }
 
-    // 8. 推送代码和 tag
-    echoInfo("正在推送代码...");
-    if (exec("git push origin master").code !== 0) {
-      echoExit("Error: Git push failed");
-      exit(1);
-    }
+  echoInfo(`正在推送 tag: ${tagName}`);
+  if (exec(`git push origin ${tagName}`).code !== 0) {
+    echoExit("Error: Git push tag failed");
+    exit(1);
+  }
 
-    echoInfo(`正在推送 tag: ${tagName}`);
-    if (exec(`git push origin ${tagName}`).code !== 0) {
-      echoExit("Error: Git push tag failed");
-      exit(1);
-    }
+  echoSuccess(`版本升级成功！tag ${tagName} 已创建并推送`);
+  echoInfo("GitHub Actions 将自动触发构建和发布流程");
+  exit();
+}
 
-    echoSuccess(`版本升级成功！tag ${tagName} 已创建并推送`);
-    echoInfo("GitHub Actions 将自动触发构建和发布流程");
-    exit();
-  })();
+// 执行主函数
+main().catch((error) => {
+  echoExit(`Error: ${error.message}`);
+  exit(1);
 });
 
 function echoSuccess(str: string): void {
