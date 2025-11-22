@@ -27,8 +27,7 @@ const config = [
       resolve(),
       typescript({
         tsconfig: "./tsconfig.json",
-        declaration: true,
-        declarationDir: "./lib/types",
+        declaration: false, // 不在 rollup 中生成类型文件，单独用 tsc 生成
       }),
       babel({
         exclude: "node_modules/**",

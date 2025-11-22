@@ -11,7 +11,8 @@
 	],
 	"scripts": {
 		"dev": "cross-env NODE_ENV=development rollup -c rollup.config.mjs -w",
-		"build": "cross-env NODE_ENV=production rollup -c rollup.config.mjs",
+		"build": "cross-env NODE_ENV=production rollup -c rollup.config.mjs && npm run build:types",
+		"build:types": "tsc -p tsconfig.declaration.json",
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:coverage": "jest --coverage",
