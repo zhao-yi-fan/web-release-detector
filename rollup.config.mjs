@@ -1,12 +1,14 @@
-import babel from "@rollup/plugin-babel";
+import { babel } from "@rollup/plugin-babel";
 import resolve from "@rollup/plugin-node-resolve";
 import typescript from "@rollup/plugin-typescript";
-import { RollupOptions } from "rollup";
-import pkg from "./package.json";
+import { readFileSync } from "fs";
 
+console.log(babel);
+
+const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 const isProd = process.env.NODE_ENV === "production";
 
-const config: RollupOptions[] = [
+const config = [
   {
     input: "./src/index.ts",
     output: [

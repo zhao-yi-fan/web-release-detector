@@ -1,6 +1,6 @@
 {
 	"name": "web-release-detector",
-	"version": "0.1.4",
+	"version": "0.1.6",
 	"description": "A release version inspector for web applications",
 	"main": "./lib/cjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -10,12 +10,12 @@
 		"src"
 	],
 	"scripts": {
-		"dev": "cross-env NODE_ENV=development rollup -c rollup.config.ts --configPlugin typescript -w",
-		"build": "cross-env NODE_ENV=production rollup -c rollup.config.ts --configPlugin typescript",
+		"dev": "cross-env NODE_ENV=development rollup -c rollup.config.mjs -w",
+		"build": "cross-env NODE_ENV=production rollup -c rollup.config.mjs",
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:coverage": "jest --coverage",
-		"pub": "ts-node publish/pub.ts"
+		"pub": "ts-node --project tsconfig.node.json publish/pub.ts"
 	},
 	"keywords": [
 		"release",
@@ -33,6 +33,7 @@
 		"@rollup/plugin-json": "^5.0.2",
 		"@rollup/plugin-node-resolve": "^15.0.1",
 		"@rollup/plugin-typescript": "^10.0.1",
+		"@types/chalk": "^0.4.31",
 		"@types/co": "^4.6.3",
 		"@types/jest": "^30.0.0",
 		"@types/js-cookie": "^3.0.2",
@@ -41,6 +42,7 @@
 		"@types/shelljs": "^0.8.11",
 		"@typescript-eslint/eslint-plugin": "^5.44.0",
 		"@typescript-eslint/parser": "^5.44.0",
+		"chalk": "^4.1.2",
 		"co": "^4.6.0",
 		"co-prompt": "^1.0.0",
 		"cross-env": "^7.0.3",

@@ -1,7 +1,8 @@
 import * as fs from "fs";
 import { exec, echo, exit } from "shelljs";
-import * as co from "co";
-import * as prompt from "co-prompt";
+import co from "co";
+import prompt from "co-prompt";
+import chalk from "chalk";
 
 interface PackageJson {
   version: string;
@@ -11,15 +12,42 @@ interface PackageJson {
 co(function* () {
   const CURRENT_BRANCH = exec("git rev-parse --abbrev-ref HEAD", {
     silent: true,
-  }).stdout;
+  }).stdout.trim();
 
   // 1. 判断分支
-  if (CURRENT_BRANCH !== "master" && CURRENT_BRANCH !== "master\n") {
+  if (CURRENT_BRANCH !== "master") {
     echoExit("必须使用master分支，且需要有master分支发布权限");
     exit(1);
   }
-  // 2. 拉取代码
-  exec("git pull", { silent: true });
+
+  // 2. 检查代码是否最新
+  echoInfo("正在检查远程代码更新...");
+
+  // 获取远程更新
+  const fetchResult = exec("git fetch origin", { silent: true });
+  if (fetchResult.code !== 0) {
+    echoExit("Error: 无法获取远程更新，请检查网络连接");
+    exit(1);
+  }
+
+  // 比较本地和远程的差异
+  const localCommit = exec("git rev-parse HEAD", {
+    silent: true,
+  }).stdout.trim();
+  const remoteCommit = exec("git rev-parse origin/master", {
+    silent: true,
+  }).stdout.trim();
+
+  if (localCommit !== remoteCommit) {
+    echoExit(
+      "Error: 本地代码不是最新的，请先执行 'git pull' 拉取最新代码后再操作"
+    );
+    echoInfo(`本地提交: ${localCommit.substring(0, 7)}`);
+    echoInfo(`远程提交: ${remoteCommit.substring(0, 7)}`);
+    exit(1);
+  }
+
+  echoSuccess("代码已是最新版本");
 
   // 3. 选择升级的版本
   echoInfo(
@@ -30,7 +58,7 @@ co(function* () {
     `
   );
   const inputVersion: string = yield prompt(
-    c("输入1/2/3后按回车(不输入默认修订号): ", "indigo")
+    chalk.cyan("输入1/2/3后按回车(不输入默认修订号): ")
   );
 
   (async () => {
@@ -39,25 +67,25 @@ co(function* () {
     const version = packageFile.version;
     const newVersion = getNewVersion(version, inputVersion);
     packageFile.version = newVersion;
-    // 4. 文件变更
+
+    // 4. 更新 package.json
     await setPackage(packageFile);
     echoSuccess(`正在由版本${version}升级到${newVersion}`);
 
-    // 4.1 build
+    // 5. 构建验证（确保代码能正常构建）
+    echoInfo("正在构建项目...");
     if (exec("npm run build").code !== 0) {
-      echoExit("Error: 本地npm run build打包失败");
+      echoExit("Error: 本地npm run build打包失败，请修复后再发布");
+      // 回滚版本号
+      packageFile.version = version;
+      await setPackage(packageFile);
       exit(1);
     }
+    echoSuccess("构建成功");
 
-    // 5. 私有npm升级(在此之前需要登陆私有源npm账号)
-    if (exec("npm publish").code !== 0) {
-      echoExit("Error: publish failed, 请检查npm源设置，并且npm账号是否登陆");
-      exit(1);
-    }
-
-    // 6. 升级后，提交代码
-    if (exec("git add .").code !== 0) {
-      echoExit("Error: Git add failed");
+    // 6. 只提交 package.json 的版本改动
+    if (exec("git add package.json").code !== 0) {
+      echoExit("Error: Git add package.json failed");
       exit(1);
     }
 
@@ -69,49 +97,43 @@ co(function* () {
       exit(1);
     }
 
-    if (exec("git push").code !== 0) {
+    // 7. 创建 tag
+    const tagName = `v${newVersion}`;
+    echoInfo(`正在创建 tag: ${tagName}`);
+    if (exec(`git tag ${tagName}`).code !== 0) {
+      echoExit("Error: Git tag failed");
+      exit(1);
+    }
+
+    // 8. 推送代码和 tag
+    echoInfo("正在推送代码...");
+    if (exec("git push origin master").code !== 0) {
       echoExit("Error: Git push failed");
       exit(1);
     }
-    echoSuccess("npm版本升级成功！");
+
+    echoInfo(`正在推送 tag: ${tagName}`);
+    if (exec(`git push origin ${tagName}`).code !== 0) {
+      echoExit("Error: Git push tag failed");
+      exit(1);
+    }
+
+    echoSuccess(`版本升级成功！tag ${tagName} 已创建并推送`);
+    echoInfo("GitHub Actions 将自动触发构建和发布流程");
     exit();
   })();
 });
 
-type ColorType =
-  | "black"
-  | "red"
-  | "green"
-  | "yellow"
-  | "blue"
-  | "popurse"
-  | "indigo"
-  | "white";
-
-function c(str: string, color: ColorType = "white"): string {
-  const colorEnum: Record<ColorType, number> = {
-    black: 30,
-    red: 31,
-    green: 32,
-    yellow: 33,
-    blue: 34,
-    popurse: 35,
-    indigo: 36,
-    white: 37,
-  };
-  return "\x1b[" + colorEnum[color] + "m " + str + " \x1b[0m";
+function echoSuccess(str: string): void {
+  echo(chalk.green(str));
 }
 
-function echoSuccess(str: string, color: ColorType = "green"): void {
-  echo(c(str, color));
+function echoInfo(str: string): void {
+  echo(chalk.blue(str));
 }
 
-function echoInfo(str: string, color: ColorType = "blue"): void {
-  echo(c(str, color));
-}
-
-function echoExit(str: string, color: ColorType = "red"): void {
-  echo(c(str, color));
+function echoExit(str: string): void {
+  echo(chalk.red(str));
 }
 
 async function getPackage(): Promise<PackageJson> {
